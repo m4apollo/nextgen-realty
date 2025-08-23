@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Build outputs
+.next/
+dist/
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+
+# IDE
+.vscode/
+.idea/
