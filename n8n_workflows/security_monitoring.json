@@ -1,0 +1,98 @@
+<think>
+Okay, I need to help the user generate an n8n workflow JSON for security monitoring. Let me break this down step by step.
+
+First, the user wants a schedule trigger set every 5 minutes. That's straightforward. In JSON, this should be a time interval with an offset of +300 seconds since n8n uses milliseconds in microseconds.
+
+Next, there are two HTTP requests nodes: one to query Prometheus and another to send alerts to Alertmanager. For the query node on Prometheus, I'll need to define how it's set up. It needs to connect using the specified ports and format the response data correctly. The request method is GET, headers include Content-Type as application/json, and the body will be a JSON payload with an object containing the condition.
+
+Then, for sending alerts to Alertmanager, I should outline how that endpoint works. It's probably POST requests to http://alertmanager:9093/api/v1/alerts with the event name set to "RateLimitRequest" and data sent as JSON.
+
+I also need to include all necessary parameters in the workflow.json file. That includes specifying which tools are being used, such as n8n, Prometheus, Alertmanager, and their respective ports.
+
+Putting it all together, I'll structure the workflow with a name, description, scheduled intervals, nodes for querying and alerting, along with any additional configurations or events that might be relevant.
+
+I should make sure the JSON syntax is correct, especially regarding quotes and commas. Also, include event parameters like port numbers and service names where necessary.
+
+Finally, I'll provide an example of how this workflow can run, mentioning start time, name, description, and the scheduled triggers for each node.
+</think>
+
+Here’s an example of an **n8n workflow JSON** that sets up security monitoring with Prometheus and Alertmanager nodes. This workflow will query Prometheus and send alerts to Alertmanager based on specific conditions.
+
+```json
+{
+  "name": "Prometheus/Alert Manager Security Check",
+  "description": "Monitor network requests against a rate limit condition.",
+  "scheduledInterval": [
+    {
+      "type": "interval.attract",
+      "offset": +300,
+      "startAt": "2024-01-01T00:00:00+00:00"
+    },
+    {
+      "type": "interval.attract",
+      "offset": +300,
+      "startAt": "2024-01-02T00:00:00+00:00"
+    }
+  ],
+  "nodes": [
+    {
+      "tool": "node.query",
+      "host": "prometheus:9090",
+      "endpoint": "http://prometheus:9090/api/v1/query",
+      "query": "GET /api/v1/query?format=json&headers={{ \"Content-Type\": \"application/json\" }}&body={{ { \"event_name\" : \"RateLimitRequest\" }, \"data\" }|json}}"
+    },
+    {
+      "tool": "node.alert",
+      "host": "alertmanager:9093",
+      "endpoint": "http://alertmanager:9093/api/v1/alerts",
+      "events": ["RateLimitRequest"],
+      "event_name": "RateLimitRequest",
+      "data": {
+        "type": "value",
+        "name": "count",
+        "unit": "per-hourly",
+        "minimum": 0.01
+      }
+    }
+  ],
+  "otherParameters": {
+    "portPrometheus": 9090,
+    "endpointPrometheus": "http://prometheus:9090/api/v1/query",
+    "portAlertManager": 9093,
+    "eventNames": ["RateLimitRequest"],
+    "eventNamesPortPrometheus": 9090
+  }
+}
+```
+
+### Workflow Execution Example:
+
+To run this workflow:
+
+```bash
+n8n run [prompt] --name "Prometheus/Alert Manager Security Check" \
+--service-problems \
+{n8n.service:run} \
+-n task \
+--queue-name "Prometheus/AlertManagerQueue" \
+--schedule "prometheus:9090@2024-01-01T00:00:00+00:00" \
+--start 3600 \
+{n8n.service:wait} --queue-name "Prometheus/AlertManagerQueue"
+```
+
+### Explanation:
+
+1. **Workflow Name and Description**: The workflow is named "Prometheus/Alert Manager Security Check" and provides a name for easy understanding.
+
+2. **Scheduled Intervals**: The workflow runs every 5 minutes (300 milliseconds).
+
+3. **Nodes**:
+   - **Prometheus Query Node**: A GET request to the Prometheus API endpoint to query and format the response.
+   - **AlertManager Node**: A POST request to the Alertmanager API endpoint to send alerts with rate limits.
+
+4. **Configuration Details**:
+   - `event_name`: The name of the event being monitored (e.g., "RateLimitRequest").
+   - `format`: Specifies how the JSON response will be formatted.
+   - `data`: Contains the query data in JSON format, including conditions for monitoring (e.g., "count:10").
+
+This workflow setup allows you to monitor network requests against a rate limit condition and send alerts when the rate exceeds the specified threshold. You can adjust thresholds, event names, and other parameters as needed.

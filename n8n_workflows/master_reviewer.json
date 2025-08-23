@@ -1,0 +1,72 @@
+{
+  "name": "Master Quality Reviewer",
+  "nodes": [
+    {
+      "name": "Agent Output Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-review"
+      }
+    },
+    {
+      "name": "Trigger Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "http://backend:8000/agents/analytics/quality_review",
+        "method": "POST",
+        "body": {
+          "agent_output": "={{ $json }}",
+          "context": "Agent output review"
+        }
+      }
+    },
+    {
+      "name": "Quality Decision",
+      "type": "n8n-nodes-base.switch",
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "condition": {
+                "value1": "={{ $json['score'] }}",
+                "operation": "lessThan",
+                "value2": "95"
+              },
+              "output": "Rejected"
+            },
+            {
+              "condition": {
+                "value1": "={{ $json['score'] }}",
+                "operation": "gte",
+                "value2": "95"
+              },
+              "output": "Approved"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Notify Agent Revision",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "http://backend:8000/agents/={{ $json['agent_name'] }}/revise",
+        "method": "POST",
+        "body": "={{ $json['recommendations'] }}"
+      }
+    },
+    {
+      "name": "Log Approval",
+      "type": "n8n-nodes-base.supabase",
+      "parameters": {
+        "operation": "insert",
+        "table": "quality_reviews",
+        "data": {
+          "status": "approved",
+          "details": "={{ $json }}"
+        }
+      }
+    }
+  ]
+}
