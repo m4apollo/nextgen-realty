@@ -33,3 +33,7 @@ node_modules/
 package-lock.json
 mobile/.expo/
 mobile/expo_log.txt
+mobile/.expo/
+mobile/expo_log.txt
+frontend/frontend_log.txt
+backend/backend_log.txt
